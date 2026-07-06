@@ -39,6 +39,5 @@ Abre `EDITOR_MEJORADO.html` directamente en el navegador. No requiere instalaci√
 
 - Remover: Click derecho + hold abre el menu si se suelta sobre la interfaz. (windows)
 - mirar los colores de el fondo y la letra.
-- cambiar el color de la letra a negro.
 - poner los bordes del html exportado curvos, igual que el editor
-- el html exportado que salga con el nombre del proyecto guardado.
+- Filtrar por responsable (hacer el resto m√°s clarito)
