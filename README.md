@@ -38,6 +38,5 @@ Abre `EDITOR_MEJORADO.html` directamente en el navegador. No requiere instalaci√
 **2 do list:**
 
 - Remover: Click derecho + hold abre el menu si se suelta sobre la interfaz. (windows)
-- mirar los colores de el fondo y la letra.
 - poner los bordes del html exportado curvos, igual que el editor
 - Filtrar por responsable (hacer el resto m√°s clarito)

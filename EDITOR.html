@@ -1362,6 +1362,7 @@ function portPos(n,dir) {
     case 'bottom': return {x:n.x+n.w/2, y:n.y+n.h};
     case 'left':   return {x:n.x,       y:n.y+n.h/2};
     case 'right':  return {x:n.x+n.w,   y:n.y+n.h/2};
+    default:       return {x:n.x+n.w/2, y:n.y+n.h/2};
   }
 }
 
@@ -1434,7 +1435,9 @@ function renderNormativaList(n) {
   (n.normativa||[]).forEach((item,i)=>{
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;';
-    row.innerHTML=`<span style="flex:1;color:var(--text)">${item}</span><button onclick="removeNormativa(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 2px" title="Eliminar">✕</button>`;
+    const span=document.createElement('span'); span.style.cssText='flex:1;color:var(--text)'; span.textContent=item;
+    const btn=document.createElement('button'); btn.style.cssText='background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 2px'; btn.title='Eliminar'; btn.textContent='✕'; btn.onclick=()=>removeNormativa(i);
+    row.appendChild(span); row.appendChild(btn);
     list.appendChild(row);
   });
 }
@@ -1479,8 +1482,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 function updateSize() {
   const n=nodes.find(x=>x.id===selNode); if(!n)return;
-  const w=parseInt(document.getElementById('p-width').value)||n.w;
-  const h=parseInt(document.getElementById('p-height').value)||n.h;
+  const pw=parseInt(document.getElementById('p-width').value);
+  const ph=parseInt(document.getElementById('p-height').value);
+  const w=Number.isFinite(pw)?pw:n.w;
+  const h=Number.isFinite(ph)?ph:n.h;
   n.w=Math.max(60,w); n.h=Math.max(40,h);
   renderNode(n); redrawAll(); updateStatus();
   snapshot();
@@ -2049,7 +2054,12 @@ document.getElementById('canvas').addEventListener('mouseup', e=>{
 function setLineStyle(v) {
   defLineStyle=v;
   document.querySelectorAll('.line-btn[data-ls]').forEach(b=>b.classList.toggle('sel',b.dataset.ls===v));
-  if(selConn){const c=conns.find(x=>x.id===selConn);if(c){c.style=v; delete c.midOffsetX; delete c.midOffsetY; redrawAll(); snapshot();}}
+  if(selConn){const c=conns.find(x=>x.id===selConn);if(c){
+    const wasOrtho=c.style==='ortho'||c.style==='step';
+    c.style=v;
+    const isOrtho=v==='ortho'||v==='step';
+    if(wasOrtho!==isOrtho){delete c.midOffsetX;delete c.midOffsetY;}
+    redrawAll();snapshot();}}
 }
 function setLineDash(v) {
   defLineDash=v;
@@ -2072,10 +2082,13 @@ function setLineWeight(v) {
   if(selConn){const c=conns.find(x=>x.id===selConn);if(c){c.weight=parseFloat(v);redrawAll();snapshot();}}
 }
 let _connLabelTimer = null;
+let _connRedrawTimer = null;
 function updateConnLabel(v) {
   if(!selConn)return;
   const c=conns.find(x=>x.id===selConn); if(!c)return;
-  c.label=v; redrawAll(); autoSave();
+  c.label=v; autoSave();
+  clearTimeout(_connRedrawTimer);
+  _connRedrawTimer = setTimeout(redrawAll, 150);
   clearTimeout(_connLabelTimer);
   _connLabelTimer = setTimeout(snapshot, 800);
 }
@@ -3204,6 +3217,7 @@ function exportCSV() {
   setStatus('CSV exportado');
 }
 
+function safeJSON(v){return JSON.stringify(v).replace(/<\//g,'<\\/');}
 function exportHTML(){
   if(!nodes.length){alert('Agrega figuras antes de exportar.');return;}
 
@@ -3520,13 +3534,13 @@ svg#sl{position:absolute;top:0;left:0;width:${cvW}px;height:${cvH}px;pointer-eve
   </div>
 </div>
 <script>
-const PAL=${JSON.stringify(PAL)};
-const nodes=${JSON.stringify(exportNodes)};
-const conns=${JSON.stringify(conns)};
-const ICONS=${JSON.stringify(ICONS)};
+const PAL=${safeJSON(PAL)};
+const nodes=${safeJSON(exportNodes)};
+const conns=${safeJSON(conns)};
+const ICONS=${safeJSON(ICONS)};
 ${arrowJS}
 ${durJS}
-function bS(s,w,h,c){const f=c.fill,st=c.stroke,l=c.light||c.fill;switch(s){case 'rect':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" ry="4" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'diamond':return '<polygon points="'+w/2+',2 '+(w-2)+','+h/2+' '+w/2+','+(h-2)+' 2,'+h/2+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'circle':{const rx=Math.min(w/2-1,h/2-1);return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="'+(h/2-1)+'" ry="'+(h/2-1)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'cylinder':{const rx=w/2-2,ry=Math.min(10,h*0.15);return '<rect x="2" y="'+ry+'" width="'+(w-4)+'" height="'+(h-ry*2)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/><ellipse cx="'+w/2+'" cy="'+ry+'" rx="'+rx+'" ry="'+ry+'" fill="'+l+'" stroke="'+st+'" stroke-width="1.5"/><ellipse cx="'+w/2+'" cy="'+(h-ry)+'" rx="'+rx+'" ry="'+ry+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'parallelogram':{const sk=20;return '<polygon points="'+sk+',1 '+(w-1)+',1 '+(w-sk)+','+(h-1)+' 1,'+(h-1)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'hexagon':{const q=w*.22;return '<polygon points="'+q+',2 '+(w-q)+',2 '+(w-2)+','+h/2+' '+(w-q)+','+(h-2)+' '+q+','+(h-2)+' 2,'+h/2+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'anno-text':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1" stroke-dasharray="4 3"/>';case 'anno-rect':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="6" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1.5" stroke-dasharray="6 3"/>';case 'anno-ellipse':return '<ellipse cx="'+w/2+'" cy="'+h/2+'" rx="'+(w/2-1)+'" ry="'+(h/2-1)+'" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1.5" stroke-dasharray="6 3"/>';default:return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}}
+function bS(s,w,h,c){const f=c.fill,st=c.stroke,l=c.light||c.fill;switch(s){case 'rect':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" ry="4" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'diamond':return '<polygon points="'+w/2+',2 '+(w-2)+','+h/2+' '+w/2+','+(h-2)+' 2,'+h/2+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'circle':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="'+(h/2-1)+'" ry="'+(h/2-1)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'cylinder':{const rx=w/2-2,ry=Math.min(10,h*0.15);return '<rect x="2" y="'+ry+'" width="'+(w-4)+'" height="'+(h-ry*2)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/><ellipse cx="'+w/2+'" cy="'+ry+'" rx="'+rx+'" ry="'+ry+'" fill="'+l+'" stroke="'+st+'" stroke-width="1.5"/><ellipse cx="'+w/2+'" cy="'+(h-ry)+'" rx="'+rx+'" ry="'+ry+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'parallelogram':{const sk=20;return '<polygon points="'+sk+',1 '+(w-1)+',1 '+(w-sk)+','+(h-1)+' 1,'+(h-1)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'hexagon':{const q=w*.22;return '<polygon points="'+q+',2 '+(w-q)+',2 '+(w-2)+','+h/2+' '+(w-q)+','+(h-2)+' '+q+','+(h-2)+' 2,'+h/2+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'anno-text':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1" stroke-dasharray="4 3"/>';case 'anno-rect':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="6" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1.5" stroke-dasharray="6 3"/>';case 'anno-ellipse':return '<ellipse cx="'+w/2+'" cy="'+h/2+'" rx="'+(w/2-1)+'" ry="'+(h/2-1)+'" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1.5" stroke-dasharray="6 3"/>';default:return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}}
 function pP(n,dir){switch(dir){case 'top':return{x:n.x+n.w/2,y:n.y};case 'bottom':return{x:n.x+n.w/2,y:n.y+n.h};case 'left':return{x:n.x,y:n.y+n.h/2};case 'right':return{x:n.x+n.w,y:n.y+n.h/2};default:return{x:n.x+n.w,y:n.y+n.h/2};}}
 function dA(d){switch(d){case 'dashed':return '8 5';case 'dotted':return '2 5';case 'dashdot':return '10 4 2 4';default:return null;}}
 function renderInfoRich(text,container){
@@ -4175,17 +4189,20 @@ async function driveLoadFile(fileId, name) {
     data.conns.forEach(c => {
       // migrate old midOffset → midOffsetX/Y
       if (c.midOffset !== undefined && c.midOffsetX === undefined) {
-        c.midOffsetX = c.midOffset; c.midOffsetY = 0; delete c.midOffset;
+        if (c.style==='step') { c.midOffsetY = c.midOffset; }
+        else { c.midOffsetX = c.midOffset; }
+        delete c.midOffset;
       }
       conns.push(c);
     });
     document.getElementById('canvas').querySelectorAll('.fnode').forEach(el => el.remove());
-    nodes.forEach(n => { const num = parseInt(n.id.slice(1)); if (num > nid) nid = num; renderNode(n); });
-    conns.forEach(c => { const num = parseInt(c.id.slice(1)); if (num > cid) cid = num; });
+    nodes.forEach(n => { const num = parseInt(n.id.slice(1)); if (Number.isFinite(num) && num > nid) nid = num; renderNode(n); });
+    conns.forEach(c => { const num = parseInt(c.id.slice(1)); if (Number.isFinite(num) && num > cid) cid = num; });
     if (data.nid) nid = Math.max(nid, data.nid);
     if (data.cid) cid = Math.max(cid, data.cid);
     selNode = null; selConn = null;
     currentProjectId = null; currentProjectName = name || 'Sin título';
+    loadProjMeta(data.projMeta || {});
     updateProjBadge();
     redrawAll(); updateStatus(); autoSave();
     snapshot();
