@@ -3294,7 +3294,7 @@ function durLbl(n){
 body{font-family:system-ui,sans-serif;background:#f0efe9;overflow:hidden;width:100vw;height:100vh}
 #wrap{width:100vw;height:100vh;overflow:hidden;position:relative;cursor:grab}
 #wrap.panning{cursor:grabbing}
-#cv{position:relative;width:${cvW}px;height:${cvH}px;transform-origin:0 0;will-change:transform}
+#cv{position:relative;width:${cvW}px;height:${cvH}px;transform-origin:0 0}
 svg#sl{position:absolute;top:0;left:0;width:${cvW}px;height:${cvH}px;pointer-events:none;z-index:1;overflow:visible}
 .fn{position:absolute;cursor:pointer;user-select:none;transition:filter .15s;z-index:2}
 .fn:hover{filter:brightness(.96)}
@@ -3706,8 +3706,18 @@ function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
   const W=${cvW}, H=${cvH};
   let scale=1, ox=0, oy=0;
   let panning=false, didPan=false, startX=0, startY=0, startOx=0, startOy=0;
+  let settleTimer=null;
 
   function applyT(){ cv.style.transform='translate('+ox+'px,'+oy+'px) scale('+scale+')'; }
+
+  // Only promote #cv to its own GPU layer while actively transforming — a
+  // static will-change:transform makes Chrome cache a blurry raster of the
+  // scaled content at rest (sharp again only where hover forces a repaint).
+  function settleSoon(){
+    cv.style.willChange='transform';
+    clearTimeout(settleTimer);
+    settleTimer=setTimeout(function(){ cv.style.willChange='auto'; },200);
+  }
 
   function fitToWindow(){
     const pad=60;
@@ -3727,6 +3737,7 @@ function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
     oy=e.clientY-(e.clientY-oy)*(newScale/scale);
     scale=newScale;
     applyT();
+    settleSoon();
   },{passive:false});
 
   wrap.addEventListener('mousedown',function(e){
@@ -3739,7 +3750,12 @@ function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
   window.addEventListener('mousemove',function(e){
     if(!panning)return;
     const dx=e.clientX-startX, dy=e.clientY-startY;
-    if(Math.abs(dx)>4||Math.abs(dy)>4) didPan=true;
+    if(!didPan&&(Math.abs(dx)>4||Math.abs(dy)>4)){
+      didPan=true;
+      cv.style.willChange='transform';
+      clearTimeout(settleTimer);
+    }
+    if(!didPan)return;
     ox=startOx+dx; oy=startOy+dy;
     applyT();
   });
@@ -3747,6 +3763,7 @@ function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
     if(e.button!==0)return;
     panning=false;
     wrap.classList.remove('panning');
+    if(didPan)settleSoon();
   });
 
   window._didPan=function(){ return didPan; };
