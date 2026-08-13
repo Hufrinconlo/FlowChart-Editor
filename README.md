@@ -1,10 +1,10 @@
 # FlujoDiagram — Editor de flujo de procesos
 
-Editor visual para crear diagramas de flujo y procesos, construido como un único archivo HTML sin dependencias externas. Guarda el proyecto en el navegador automáticamente y permite exportar a HTML o sincronizar con Google Drive.
+Editor visual para crear diagramas de flujo y procesos, construido como un único archivo HTML sin dependencias externas. Guarda el proyecto en el navegador automáticamente y permite exportarlo como JSON o como HTML autónomo.
 
 ## Cómo usar
 
-Abre `EDITOR_MEJORADO.html` directamente en el navegador. No requiere instalación ni servidor.
+Abre `EDITOR.html` directamente en el navegador. No requiere instalación ni servidor.
 
 ## Funcionalidades
 
@@ -14,8 +14,8 @@ Abre `EDITOR_MEJORADO.html` directamente en el navegador. No requiere instalaci�
 - **Navegación**: rueda del ratón para hacer zoom (también `Ctrl +` / `Ctrl -` / `Ctrl 0`). Clic derecho + arrastrar para desplazarse por el canvas. Mini-mapa en la esquina inferior derecha.
 - **Historial**: deshacer y rehacer ilimitados (`Ctrl+Z` / `Ctrl+Y`).
 - **Otros**: duplicar figuras (`Ctrl+D`), copiar y pegar (`Ctrl+C` / `Ctrl+V`), editar etiquetas de conexión, modal de detalle con doble clic, guardado automático en el navegador.
+- **Guardar/abrir**: descarga el diagrama como archivo `.json` (formato documentado en [SCHEMA.md](SCHEMA.md)) o gestiona varios proyectos guardados en el navegador desde el modal "Proyectos".
 - **Exportar**: genera un archivo HTML autónomo listo para compartir o imprimir.
-- **Google Drive**: guarda y abre proyectos directamente desde Drive.
 
 ## Atajos de teclado
 

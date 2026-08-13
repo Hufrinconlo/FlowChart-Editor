@@ -1742,7 +1742,7 @@ function setNodeColor(c) {
 
 // ── DELETE ──
 function deleteSelected() {
-  if(multiSel.size > 1) {
+  if(multiSel.size > 0) {
     const ids = [...multiSel];
     ids.forEach(id => {
       nodes = nodes.filter(n=>n.id!==id);
@@ -2789,7 +2789,7 @@ function closeModal(){document.getElementById('modal-bg').classList.remove('open
 let clipboard = null; // array of deep-cloned nodes
 
 function copySelected() {
-  const ids = multiSel.size > 1 ? [...multiSel] : (selNode ? [selNode] : []);
+  const ids = multiSel.size > 0 ? [...multiSel] : (selNode ? [selNode] : []);
   if(!ids.length) return;
   clipboard = ids.map(id => JSON.parse(JSON.stringify(nodes.find(x=>x.id===id)))).filter(Boolean);
   const count = clipboard.length;
@@ -2822,7 +2822,7 @@ function pasteClipboard() {
 }
 
 function duplicateSelected() {
-  const ids = multiSel.size > 1 ? [...multiSel] : (selNode ? [selNode] : []);
+  const ids = multiSel.size > 0 ? [...multiSel] : (selNode ? [selNode] : []);
   if(!ids.length) return;
   copySelected();
   pasteClipboard();
@@ -2832,7 +2832,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeModal();cancelConn(); multiSel.clear(); nodes.forEach(n=>renderNode(n)); updateMultiSelUI();}
   const inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
   if((e.key==='Delete'||e.key==='Backspace')&&!inInput){
-    if(multiSel.size>1) deleteSelected();
+    if(multiSel.size>0) deleteSelected();
     else if(selNode)deleteNodeById(selNode);
     else if(selConn)deleteSelectedConn();
   }
@@ -2851,7 +2851,7 @@ document.addEventListener('keydown',e=>{
   // ── ARROW KEY NUDGE ──
   const NUDGE_STEP = 1; // px per keypress — edit this value to adjust movement amount
   if(!inInput && (e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight')){
-    const ids = multiSel.size > 1 ? [...multiSel] : (selNode ? [selNode] : []);
+    const ids = multiSel.size > 0 ? [...multiSel] : (selNode ? [selNode] : []);
     if(!ids.length) return;
     e.preventDefault();
     const dx = e.key==='ArrowLeft' ? -NUDGE_STEP : e.key==='ArrowRight' ? NUDGE_STEP : 0;
