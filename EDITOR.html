@@ -3916,6 +3916,23 @@ function openProjectById(id) {
   } catch(e) { alert('No se pudo abrir el proyecto.'); }
 }
 
+function overwriteProject(id) {
+  if (!nodes.length) { alert('No hay nada abierto para guardar.'); return; }
+  const list = getProjectsMeta();
+  const p = list.find(x => x.id === id);
+  if (!p) { alert('No se encontró el proyecto.'); return; }
+  if (!confirm(`Se sobrescribirá "${p.name}" con el flujo actualmente abierto. Esta acción no se puede deshacer.\n¿Continuar?`)) return;
+  currentProjectId   = id;
+  currentProjectName = p.name;
+  updateProjBadge();
+  if (writeProjectToStorage(id, p.name)) {
+    persistCurrentProject();
+    autoSave();
+    renderProjectsList();
+    setStatus('Sobrescrito: ' + p.name);
+  }
+}
+
 function deleteProject(id) {
   if (!confirm('¿Eliminar este proyecto? Esta acción no se puede deshacer.')) return;
   localStorage.removeItem('flujodiagram_proj_' + id);
@@ -4003,6 +4020,7 @@ function renderProjectsList() {
       </div>
       <div class="proj-item-actions">
         <button class="proj-act-btn open" onclick="openProjectById('${p.id}')">Abrir</button>
+        <button class="proj-act-btn" onclick="overwriteProject('${p.id}')" title="Reemplazar este proyecto con el flujo actualmente abierto">Sobrescribir</button>
         <button class="proj-act-btn del" onclick="deleteProject('${p.id}')">Eliminar</button>
       </div>
     </div>
