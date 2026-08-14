@@ -34,9 +34,4 @@ Abre `EDITOR.html` directamente en el navegador. No requiere instalación ni ser
 | `Clic derecho + arrastrar` | Desplazar el canvas |
 | `Shift+clic` | Añadir figura a la selección múltiple |
 
-
 **2 do list:**
-
-- Remover: Click derecho + hold abre el menu si se suelta sobre la interfaz. (windows)
-- poner los bordes del html exportado curvos, igual que el editor
-- Filtrar por responsable (hacer el resto más clarito)

@@ -44,6 +44,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .tb-btn.primary { background: #1a1917; color: #fff; border-color: #1a1917; }
 .tb-btn.primary:hover { background: #333; }
 .tb-btn.icon-only { padding: 5px 6px; }
+.tb-select {
+  height: 30px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 500; cursor: pointer; max-width: 170px;
+}
+.tb-select:hover { border-color: var(--border2); }
 .tb-btn.icon-only svg { width: 15px; height: 15px; }
 .spacer { flex: 1; }
 .tb-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
@@ -266,7 +272,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 #time-total { color: var(--accent); font-weight: 600; }
 
 /* Nodes */
-.fnode { position: absolute; z-index: 10; cursor: pointer; user-select: none; }
+.fnode { position: absolute; z-index: 10; cursor: pointer; user-select: none; transition: opacity .15s; }
+.fnode.resp-dimmed { opacity: .22; }
+.fnode.resp-dimmed:hover { opacity: .55; }
 .fnode svg.shape { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .fnode .lw {
   position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -616,6 +624,10 @@ body.connecting .fnode .port { opacity: 1; cursor: crosshair; }
     <button class="tb-btn icon-only" onclick="alignNodes('centerV')" title="Centrar verticalmente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12"/><rect x="7"  y="5"  width="4" height="14" rx="1"/><rect x="13" y="7"  width="4" height="10" rx="1"/></svg></button>
     <button class="tb-btn icon-only" onclick="alignNodes('bottom')"  title="Alinear borde inferior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="20"/><rect x="7"  y="8"  width="4" height="10" rx="1"/><rect x="13" y="4"  width="4" height="14" rx="1"/></svg></button>
   </div>
+  <div class="tb-sep"></div>
+  <select id="responsable-filter" class="tb-select" onchange="setResponsableFilter(this.value)" title="Mostrar en color solo las figuras de un responsable">
+    <option value="">Todos los responsables</option>
+  </select>
   <div class="tb-sep"></div>
   <button class="tb-btn" onclick="clearAll()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6l-1 14H6L5 6"/></svg>
@@ -1058,6 +1070,35 @@ let defLineStyle='straight', defLineDash='solid', defArrowEnd='arrow';
 let defLineColor='#64748b', defLineWeight=2;
 let activeNodeColor='blue';
 
+// ── RESPONSABLE FILTER ──
+let responsableFilter = ''; // '' = show all, no dimming
+
+// Multiple responsables in one node's "sub" field are written as "A / B" — split on '/'.
+function splitResponsables(text) {
+  return (text || '').split('/').map(s => s.trim()).filter(Boolean);
+}
+
+function getAllResponsables() {
+  const set = new Set();
+  nodes.forEach(n => splitResponsables(n.sub).forEach(r => set.add(r)));
+  return [...set].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+function refreshResponsableFilterOptions() {
+  const sel = document.getElementById('responsable-filter');
+  if (!sel) return;
+  const list = getAllResponsables();
+  sel.innerHTML = '<option value="">Todos los responsables</option>' +
+    list.map(r => `<option value="${escProjName(r)}">${escProjName(r)}</option>`).join('');
+  if (responsableFilter && !list.includes(responsableFilter)) responsableFilter = '';
+  sel.value = responsableFilter;
+}
+
+function setResponsableFilter(v) {
+  responsableFilter = v;
+  nodes.forEach(n => renderNode(n));
+}
+
 // ── TABS ──
 function switchTab(t) {
   ['shapes','lines','props'].forEach(id => {
@@ -1247,6 +1288,10 @@ function renderNode(n) {
   }
   el.classList.toggle('selected', selNode===n.id);
   el.classList.toggle('multi-selected', multiSel.has(n.id) && selNode!==n.id);
+  // Responsable filter: dim nodes that don't list the selected responsable (annotations are exempt)
+  const isAnnoShape = n.shape && n.shape.startsWith('anno-');
+  const matchesResp = isAnnoShape || !responsableFilter || splitResponsables(n.sub).includes(responsableFilter);
+  el.classList.toggle('resp-dimmed', !matchesResp);
   // Annotations: hide ports, tweak text layout
   const isAnno = n.shape && n.shape.startsWith('anno-');
   const portsEl = el.querySelector('.ports');
@@ -1642,6 +1687,7 @@ let _propTimer = null;
 function updateProp(f,v) {
   const n=nodes.find(x=>x.id===selNode); if(!n)return;
   n[f]=v; renderNode(n); autoSave();
+  if (f === 'sub') refreshResponsableFilterOptions();
   clearTimeout(_propTimer);
   _propTimer = setTimeout(snapshot, 800);
 }
@@ -3048,6 +3094,7 @@ function updateStatus(){
   const totalMins=nodes.reduce((s,n)=>s+durToMin(n),0);
   document.getElementById('time-total').textContent=formatTotalTime(totalMins);
   updateMinimap();
+  refreshResponsableFilterOptions();
   autoSave();
 }
 
@@ -3337,8 +3384,22 @@ body{font-family:system-ui,sans-serif;background:#f0efe9;overflow:hidden;width:1
 #wrap.panning{cursor:grabbing}
 #cv{position:relative;width:${cvW}px;height:${cvH}px;transform-origin:0 0}
 svg#sl{position:absolute;top:0;left:0;width:${cvW}px;height:${cvH}px;pointer-events:none;z-index:1;overflow:visible}
-.fn{position:absolute;cursor:pointer;user-select:none;transition:filter .15s;z-index:2}
+.fn{position:absolute;cursor:pointer;user-select:none;transition:filter .15s,opacity .15s;z-index:2}
 .fn:hover{filter:brightness(.96)}
+.fn.resp-dimmed{opacity:.22}
+.fn.resp-dimmed:hover{opacity:.55}
+#resp-filter-wrap{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:120;
+  background:#fff;border:1px solid #e5e5e3;border-radius:20px;
+  box-shadow:0 4px 20px rgba(0,0,0,.13);
+  padding:6px 14px 6px 16px;display:flex;align-items:center;gap:8px;
+  font-family:'DM Sans',system-ui,sans-serif;
+}
+#resp-filter-wrap svg{width:13px;height:13px;color:#94b43b;flex-shrink:0}
+#resp-filter{
+  border:none;background:none;font-family:'DM Sans',system-ui,sans-serif;
+  font-size:12.5px;font-weight:500;color:#1a1917;cursor:pointer;outline:none;max-width:220px;
+}
 .fn svg.sh{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .fn .lw{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 12px;pointer-events:none}
 .fn[data-shape="diamond"] .lw{padding:16% 22%}
@@ -3468,6 +3529,10 @@ svg#sl{position:absolute;top:0;left:0;width:${cvW}px;height:${cvH}px;pointer-eve
 .lsb-sec-empty{font-size:13px;color:#bbb;font-style:italic}
 .lsb-pill{display:inline-flex;align-items:center;gap:6px;background:#f3f3f1;color:#555;font-size:12px;font-weight:500;padding:4px 10px;border-radius:20px}
 </style></head><body>
+<div id="resp-filter-wrap" style="display:none">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+  <select id="resp-filter" onchange="setRespFilter(this.value)"></select>
+</div>
 <!-- Left project sidebar -->
 <div id="lsb">
   <button id="lsb-toggle" onclick="toggleLsb()" title="Información del proyecto">
@@ -3523,6 +3588,7 @@ const PAL=${safeJSON(PAL)};
 const nodes=${safeJSON(exportNodes)};
 const conns=${safeJSON(conns)};
 const ICONS=${safeJSON(ICONS)};
+const RESP_LIST=${safeJSON(getAllResponsables())};
 ${arrowJS}
 ${durJS}
 function bS(s,w,h,c){const f=c.fill,st=c.stroke,l=c.light||c.fill;switch(s){case 'rect':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" ry="4" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'diamond':return '<polygon points="'+w/2+',2 '+(w-2)+','+h/2+' '+w/2+','+(h-2)+' 2,'+h/2+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'circle':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="'+(h/2-1)+'" ry="'+(h/2-1)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'cylinder':{const rx=w/2-2,ry=Math.min(10,h*0.15);return '<rect x="2" y="'+ry+'" width="'+(w-4)+'" height="'+(h-ry*2)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/><ellipse cx="'+w/2+'" cy="'+ry+'" rx="'+rx+'" ry="'+ry+'" fill="'+l+'" stroke="'+st+'" stroke-width="1.5"/><ellipse cx="'+w/2+'" cy="'+(h-ry)+'" rx="'+rx+'" ry="'+ry+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'parallelogram':{const sk=20;return '<polygon points="'+sk+',1 '+(w-1)+',1 '+(w-sk)+','+(h-1)+' 1,'+(h-1)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'hexagon':{const q=w*.22;return '<polygon points="'+q+',2 '+(w-q)+',2 '+(w-2)+','+h/2+' '+(w-q)+','+(h-2)+' '+q+','+(h-2)+' 2,'+h/2+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'anno-text':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1" stroke-dasharray="4 3"/>';case 'anno-rect':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="6" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1.5" stroke-dasharray="6 3"/>';case 'anno-ellipse':return '<ellipse cx="'+w/2+'" cy="'+h/2+'" rx="'+(w/2-1)+'" ry="'+(h/2-1)+'" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1.5" stroke-dasharray="6 3"/>';default:return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}}
@@ -3667,6 +3733,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   nodes.forEach(n=>{
     const c=PAL[n.color]||PAL.blue;
     const el=document.createElement('div');
+    el.id=n.id;
     el.className='fn';
     el.setAttribute('data-shape', n.shape);
     el.style.cssText='left:'+n.x+'px;top:'+n.y+'px;width:'+n.w+'px;height:'+n.h+'px';
@@ -3739,6 +3806,24 @@ window.addEventListener('DOMContentLoaded',()=>{
   },80);
 });
 function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── RESPONSABLE FILTER ──
+function splitResponsables(text){return (text||'').split('/').map(s=>s.trim()).filter(Boolean);}
+let respFilter='';
+function setRespFilter(v){
+  respFilter=v;
+  nodes.forEach(n=>{
+    const el=document.getElementById(n.id); if(!el)return;
+    const isAnno=n.shape&&n.shape.startsWith('anno-');
+    const matches=isAnno||!respFilter||splitResponsables(n.sub).includes(respFilter);
+    el.classList.toggle('resp-dimmed',!matches);
+  });
+}
+if(RESP_LIST.length){
+  const respSel=document.getElementById('resp-filter');
+  respSel.innerHTML='<option value="">Todos los responsables</option>'+RESP_LIST.map(r=>'<option value="'+escH(r)+'">'+escH(r)+'</option>').join('');
+  document.getElementById('resp-filter-wrap').style.display='flex';
+}
 
 // ── PAN & ZOOM ──
 (function(){
