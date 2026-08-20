@@ -156,6 +156,51 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 }
 .cdot:hover { transform: scale(1.18); }
 .cdot.sel { border-color: var(--text); }
+.cdot.custom-cdot {
+  position: relative; overflow: hidden;
+  background: conic-gradient(from 0deg, #ff3b30, #ffcc00, #34c759, #00c7be, #007aff, #af52de, #ff3b30);
+}
+.cdot.custom-cdot::after {
+  content: '+'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 700; text-shadow: 0 0 2px rgba(0,0,0,.6);
+  pointer-events: none;
+}
+.cdot.slot-empty { background: transparent; border-style: dashed; border-color: var(--border2); cursor: default; }
+.cdot.slot-empty:hover { transform: none; }
+
+/* Custom color popover — replaces the native <input type="color"> popup, since that
+   OS-drawn window can't be modified to add our own hex/RGB fields or a save button. */
+#ccp {
+  position: fixed; z-index: 400; width: 200px;
+  background: #fff; border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 12px;
+  flex-direction: column; gap: 8px; font-family: 'DM Sans', sans-serif;
+}
+.ccp-top { display: flex; align-items: center; gap: 8px; }
+.ccp-preview { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); flex-shrink: 0; }
+.ccp-native-trigger {
+  position: relative; overflow: hidden; flex: 1; height: 34px; border-radius: 8px;
+  border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+  font-size: 13px; cursor: pointer; color: var(--text2); background: var(--bg);
+}
+.ccp-native-trigger input[type="color"] {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: none; padding: 0;
+}
+.ccp-field label { display: block; font-size: 10px; font-weight: 600; color: var(--text2); margin-bottom: 3px; text-transform: uppercase; letter-spacing: .06em; }
+.ccp-field input {
+  width: 100%; font-family: 'DM Sans', sans-serif; font-size: 12.5px; color: var(--text);
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px;
+  outline: none; transition: border-color .12s;
+}
+.ccp-field input:focus { border-color: var(--accent); background: #fff; }
+.ccp-rgb { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.ccp-save-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px; border-radius: 7px; border: 1px solid var(--accent);
+  background: var(--accent-bg); color: var(--accent); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: all .12s;
+}
+.ccp-save-btn:hover { background: var(--accent); color: #fff; }
 
 /* Line style picker */
 .line-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
@@ -704,16 +749,7 @@ body.connecting .fnode .port { opacity: 1; cursor: crosshair; }
       </div>
       <div class="sb-sec">
         <div class="sb-lbl">Color de figura</div>
-        <div class="color-row" id="node-color-row">
-          <div class="cdot sel" data-c="blue"   style="background:#4472a8" onclick="setNodeColor('blue')"   title="Azul"></div>
-          <div class="cdot"     data-c="violet" style="background:#7460ac" onclick="setNodeColor('violet')" title="Violeta"></div>
-          <div class="cdot"     data-c="green"  style="background:#376523" onclick="setNodeColor('green')"  title="Verde"></div>
-          <div class="cdot"     data-c="amber"  style="background:#9c7a00" onclick="setNodeColor('amber')"  title="Ámbar"></div>
-          <div class="cdot"     data-c="red"    style="background:#9c0006" onclick="setNodeColor('red')"    title="Rojo"></div>
-          <div class="cdot"     data-c="pink"   style="background:#8e3152" onclick="setNodeColor('pink')"   title="Rosa"></div>
-          <div class="cdot"     data-c="gray"   style="background:#767676" onclick="setNodeColor('gray')"   title="Gris"></div>
-          <div class="cdot"     data-c="dark"   style="background:#1f3864" onclick="setNodeColor('dark')"   title="Azul oscuro"></div>
-        </div>
+        <div class="color-row" id="node-color-row"></div>
       </div>
     </div>
 
@@ -760,11 +796,11 @@ body.connecting .fnode .port { opacity: 1; cursor: crosshair; }
       <div class="sb-sec">
         <div class="sb-lbl">Punta de flecha</div>
         <div class="arrow-grid">
-          <button class="arrow-btn sel" data-ae="arrow" onclick="setArrowEnd('arrow')">
+          <button class="arrow-btn" data-ae="arrow" onclick="setArrowEnd('arrow')">
             <svg viewBox="0 0 36 16"><line x1="2" y1="8" x2="28" y2="8" stroke="#2563eb" stroke-width="2"/><polyline points="20,3 30,8 20,13" fill="none" stroke="#2563eb" stroke-width="2"/></svg>
             Flecha
           </button>
-          <button class="arrow-btn" data-ae="filled" onclick="setArrowEnd('filled')">
+          <button class="arrow-btn sel" data-ae="filled" onclick="setArrowEnd('filled')">
             <svg viewBox="0 0 36 16"><line x1="2" y1="8" x2="24" y2="8" stroke="#2563eb" stroke-width="2"/><polygon points="22,3 32,8 22,13" fill="#2563eb"/></svg>
             Sólida
           </button>
@@ -975,6 +1011,30 @@ body.connecting .fnode .port { opacity: 1; cursor: crosshair; }
   </div>
 </div>
 
+<!-- CUSTOM COLOR POPOVER -->
+<div id="ccp" style="display:none">
+  <div class="ccp-top">
+    <div class="ccp-preview" id="ccp-preview"></div>
+    <label class="ccp-native-trigger" title="Selector visual del sistema">
+      🎨
+      <input type="color" id="node-color-native" oninput="ccpSetFromHex(this.value, true)">
+    </label>
+  </div>
+  <div class="ccp-field">
+    <label>Hex</label>
+    <input type="text" id="ccp-hex" maxlength="7" oninput="ccpHexInput()">
+  </div>
+  <div class="ccp-rgb">
+    <div class="ccp-field"><label>R</label><input type="number" id="ccp-r" min="0" max="255" oninput="ccpRgbInput()"></div>
+    <div class="ccp-field"><label>G</label><input type="number" id="ccp-g" min="0" max="255" oninput="ccpRgbInput()"></div>
+    <div class="ccp-field"><label>B</label><input type="number" id="ccp-b" min="0" max="255" oninput="ccpRgbInput()"></div>
+  </div>
+  <button class="ccp-save-btn" onclick="saveCurrentCustomColor()">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+    Guardar en mi paleta
+  </button>
+</div>
+
 <!-- MODAL -->
 <div id="modal-bg" onclick="if(event.target===this)closeModal()">
   <div id="modal">
@@ -998,15 +1058,84 @@ const PAL = {
   blue:   {fill:'#b8cce4',stroke:'#4472a8',text:'#111111',light:'#dce6f1'},
   violet: {fill:'#ccc0da',stroke:'#7460ac',text:'#111111',light:'#e2dced'},
   green:  {fill:'#c6efce',stroke:'#376523',text:'#111111',light:'#ebf5eb'},
-  amber:  {fill:'#ffeb9c',stroke:'#9c7a00',text:'#111111',light:'#fff5cc'},
+  amber:  {fill:'#ffcc66',stroke:'#a15c00',text:'#111111',light:'#ffe0a3'},
   red:    {fill:'#ffc7ce',stroke:'#9c0006',text:'#111111',light:'#ffdde0'},
   pink:   {fill:'#f4b8c1',stroke:'#8e3152',text:'#111111',light:'#fad7de'},
   gray:   {fill:'#d9d9d9',stroke:'#767676',text:'#111111',light:'#f2f2f2'},
   slate:  {fill:'#cbd5e1',stroke:'#475569',text:'#111111',light:'#e2e8f0'},
   dark:   {fill:'#44546a',stroke:'#1f3864',text:'#ffffff',light:'#5a6e84'},
+  teal:    {fill:'#a9ddd2',stroke:'#0f766e',text:'#111111',light:'#d3efe9'},
+  cyan:    {fill:'#addde9',stroke:'#0e7490',text:'#111111',light:'#d6eef5'},
+  indigo:  {fill:'#c7cdf5',stroke:'#4338ca',text:'#111111',light:'#e1e4fa'},
+  purple:  {fill:'#e0c3f0',stroke:'#7e22ce',text:'#111111',light:'#efdcf8'},
+  orange:  {fill:'#ffd3a6',stroke:'#c2570c',text:'#111111',light:'#ffe7cc'},
+  yellow:  {fill:'#f5e858',stroke:'#8a7500',text:'#111111',light:'#faf3ab'},
+  emerald: {fill:'#a9e6c4',stroke:'#0f7a4d',text:'#111111',light:'#d4f2e1'},
+  rose:    {fill:'#fbc7d6',stroke:'#be185d',text:'#111111',light:'#fde1e9'},
 };
 const SDEFS = {rect:{w:160,h:60},diamond:{w:170,h:90},circle:{w:160,h:50},cylinder:{w:150,h:84},parallelogram:{w:160,h:60},hexagon:{w:160,h:70},'anno-text':{w:160,h:44},'anno-rect':{w:220,h:160},'anno-ellipse':{w:200,h:140}};
 const ICONS = {rect:'📋',diamond:'❓',circle:'⭕',cylinder:'🗄️',parallelogram:'↔️',hexagon:'⚙️'};
+
+// Custom node colors: user picks one hex (treated as the "stroke" identity color),
+// fill/light are derived by lightening toward white so shapes keep the same
+// pastel-fill + saturated-stroke look as the built-in palette.
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace('#',''), 16);
+  return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+}
+function rgbToHex(r,g,b) {
+  const clamp = v => Math.max(0, Math.min(255, Math.round(v)));
+  return '#'+[clamp(r),clamp(g),clamp(b)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+function lightenHex(hex, amt) {
+  const {r,g,b} = hexToRgb(hex);
+  const mix = v => v + (255-v)*amt;
+  return rgbToHex(mix(r),mix(g),mix(b));
+}
+function deriveCustomColor(hex) {
+  return { fill: lightenHex(hex,0.72), stroke: hex, light: lightenHex(hex,0.86), text:'#111111' };
+}
+function nodeColor(n) {
+  return (n.color==='custom' && n.customColor) ? n.customColor : (PAL[n.color]||PAL.blue);
+}
+
+// Swatches are generated from PAL itself (fill = background, stroke = ring)
+// so the picker always matches how the actual shapes render — never hand-typed hexes to drift out of sync.
+const NODE_COLOR_ORDER = ['blue','cyan','teal','green','emerald','yellow','amber','orange','red','rose','pink','purple','violet','indigo','gray','slate','dark'];
+const NODE_COLOR_LABELS = {blue:'Azul',cyan:'Cian',teal:'Verde azulado',green:'Verde',emerald:'Esmeralda',yellow:'Amarillo',amber:'Ámbar',orange:'Naranja',red:'Rojo',rose:'Rosa intenso',pink:'Rosa',purple:'Púrpura',violet:'Violeta',indigo:'Índigo',gray:'Gris',slate:'Pizarra',dark:'Azul oscuro'};
+
+// 8 saved slots for custom colors (persisted across sessions/projects, like a personal swatch bank)
+const CUSTOM_COLOR_KEY = 'flujodiagram_custom_colors';
+const CUSTOM_COLOR_SLOTS = 8;
+let customColorSlots = [];
+try { customColorSlots = JSON.parse(localStorage.getItem(CUSTOM_COLOR_KEY)) || []; } catch { customColorSlots = []; }
+function addCustomColorSlot(hex) {
+  if (customColorSlots.includes(hex)) return;
+  customColorSlots.push(hex);
+  if (customColorSlots.length > CUSTOM_COLOR_SLOTS) customColorSlots.shift();
+  try { localStorage.setItem(CUSTOM_COLOR_KEY, JSON.stringify(customColorSlots)); } catch {}
+}
+
+function renderNodeColorRow() {
+  const row = document.getElementById('node-color-row');
+  if (!row) return;
+  const activeHex = activeNodeColor==='custom' && activeCustomColor ? activeCustomColor.stroke : null;
+  const presetHtml = NODE_COLOR_ORDER.map(key => {
+    const c = PAL[key];
+    const sel = (!activeHex && key===activeNodeColor) ? ' sel' : '';
+    return `<div class="cdot${sel}" data-c="${key}" style="background:${c.fill};box-shadow:inset 0 0 0 2px ${c.stroke}" onclick="setNodeColor('${key}')" title="${NODE_COLOR_LABELS[key]||key}"></div>`;
+  }).join('');
+  const customBtnSel = (activeHex && !customColorSlots.includes(activeHex)) ? ' sel' : '';
+  const customBtn = `<div class="cdot custom-cdot${customBtnSel}" id="node-color-custom" title="Color personalizado" onclick="openCustomColorPopover(this)"></div>`;
+  const slotsHtml = Array.from({length: CUSTOM_COLOR_SLOTS}, (_, i) => {
+    const hex = customColorSlots[i];
+    if (!hex) return `<div class="cdot slot-empty" title="Espacio libre para un color personalizado"></div>`;
+    const cc = deriveCustomColor(hex);
+    const sel = activeHex===hex ? ' sel' : '';
+    return `<div class="cdot${sel}" data-hex="${hex}" style="background:${cc.fill};box-shadow:inset 0 0 0 2px ${cc.stroke}" onclick="applyCustomColorSlot('${hex}')" title="Color guardado"></div>`;
+  }).join('');
+  row.innerHTML = presetHtml + customBtn + slotsHtml;
+}
 
 // ── STATE ──
 let nodes=[], conns=[], nid=0, cid=0;
@@ -1066,9 +1195,11 @@ let historyIndex = -1;
 const MAX_HISTORY = 60;
 
 // Line defaults (applied to new connections)
-let defLineStyle='straight', defLineDash='solid', defArrowEnd='arrow';
+let defLineStyle='straight', defLineDash='solid', defArrowEnd='filled';
 let defLineColor='#64748b', defLineWeight=2;
 let activeNodeColor='blue';
+let activeCustomColor=null; // {fill,stroke,light,text} — set when activeNodeColor==='custom'
+renderNodeColorRow();
 
 // ── RESPONSABLE FILTER ──
 let responsableFilter = ''; // '' = show all, no dimming
@@ -1177,6 +1308,7 @@ function addNode(shape) {
   const cy=(wrap.scrollTop+wrap.clientHeight/2)/zoom;
   const d=SDEFS[shape];
   const n={id,shape,color:shape.startsWith('anno-')?'slate':activeNodeColor,x:Math.max(20,cx-d.w/2+(Math.random()-.5)*80),y:Math.max(20,cy-d.h/2+(Math.random()-.5)*80),w:d.w,h:d.h,title:shape==='anno-text'?'Texto de anotación':shape==='anno-rect'||shape==='anno-ellipse'?'':shapeName(shape),sub:'',info:'',consideraciones:'',normativa:[],durVal:0,durUnit:'min',fontFamily:'',fontSize:0};
+  if (n.color==='custom' && activeCustomColor) n.customColor = activeCustomColor;
   nodes.push(n);
   renderNode(n);
   selectNode(n.id);
@@ -1258,7 +1390,7 @@ function renderNode(n) {
     if(isBg) canvas.insertBefore(el, canvas.firstChild); else canvas.appendChild(el);
   }
   const isBg = n.shape==='anno-rect'||n.shape==='anno-ellipse';
-  const c=PAL[n.color]||PAL.blue;
+  const c=nodeColor(n);
   el.style.cssText=`left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px;z-index:${isBg?2:10}`;
   el.setAttribute('data-shape', n.shape);
   el.querySelector('svg.shape').innerHTML=buildShape(n.shape,n.w,n.h,c);
@@ -1430,8 +1562,9 @@ function showNodeProps(id) {
   document.getElementById('p-font-family').value=n.fontFamily||'';
   document.getElementById('p-font-size').value=n.fontSize||'';
   renderNormativaList(n);
-  document.querySelectorAll('#node-color-row .cdot').forEach(d=>d.classList.toggle('sel',d.dataset.c===n.color));
   activeNodeColor=n.color;
+  if (n.color==='custom' && n.customColor) activeCustomColor = n.customColor;
+  renderNodeColorRow();
   document.querySelectorAll('#change-shape-grid .shape-btn').forEach(btn=>{
     const s=btn.id.replace('csg-','');
     btn.classList.toggle('active', s===n.shape);
@@ -1806,11 +1939,89 @@ document.getElementById('canvas-wrap').addEventListener('scroll',()=>{
 });
 
 function setNodeColor(c) {
+  closeCustomColorPopover();
   activeNodeColor=c;
-  document.querySelectorAll('#node-color-row .cdot').forEach(d=>d.classList.toggle('sel',d.dataset.c===c));
+  renderNodeColorRow();
   const n=nodes.find(x=>x.id===selNode); if(!n)return;
-  n.color=c; renderNode(n);
-  snapshot();
+  n.color=c; delete n.customColor; renderNode(n);
+  autoSave(); snapshot();
+}
+
+// Live-updates the selected figure as the user adjusts the custom color popover.
+// Cheap and frequent (fires on every keystroke/drag) — never snapshots or re-renders
+// #node-color-row itself, so it can't disturb whatever the user is mid-interaction with.
+function previewNodeCustomColor(hex) {
+  activeNodeColor = 'custom';
+  activeCustomColor = deriveCustomColor(hex);
+  const n = nodes.find(x=>x.id===selNode); if(!n) return;
+  n.color = 'custom'; n.customColor = activeCustomColor; renderNode(n);
+}
+
+// Applies an already-saved custom color slot (does not touch the saved slots list)
+function applyCustomColorSlot(hex) {
+  previewNodeCustomColor(hex);
+  renderNodeColorRow();
+  if (nodes.find(x=>x.id===selNode)) { autoSave(); snapshot(); }
+}
+
+// ── CUSTOM COLOR POPOVER ──
+// A native <input type="color">'s OS popup can't be modified, so the hex/RGB fields
+// and the "Guardar" button live in our own small popover instead, anchored to the swatch.
+function openCustomColorPopover(anchorEl) {
+  const pop = document.getElementById('ccp');
+  const r = anchorEl.getBoundingClientRect();
+  pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 220)) + 'px';
+  pop.style.top = (r.bottom + 8) + 'px';
+  pop.style.display = 'flex';
+  const hex = (activeNodeColor==='custom' && activeCustomColor) ? activeCustomColor.stroke : '#4472a8';
+  ccpSetFromHex(hex, false);
+  document.addEventListener('mousedown', ccpOutsideClick, true);
+}
+function closeCustomColorPopover() {
+  const pop = document.getElementById('ccp');
+  if (!pop || pop.style.display==='none') return;
+  pop.style.display = 'none';
+  document.removeEventListener('mousedown', ccpOutsideClick, true);
+  if (activeNodeColor==='custom' && activeCustomColor && nodes.find(x=>x.id===selNode)) {
+    autoSave(); snapshot();
+  }
+}
+function ccpOutsideClick(e) {
+  const pop = document.getElementById('ccp');
+  if (pop.contains(e.target)) return;
+  if (e.target.closest && e.target.closest('#node-color-custom')) return;
+  closeCustomColorPopover();
+}
+function ccpSetFromHex(hex, apply) {
+  document.getElementById('ccp-hex').value = hex;
+  const {r,g,b} = hexToRgb(hex);
+  document.getElementById('ccp-r').value = r;
+  document.getElementById('ccp-g').value = g;
+  document.getElementById('ccp-b').value = b;
+  document.getElementById('ccp-preview').style.background = hex;
+  document.getElementById('node-color-native').value = hex;
+  if (apply) previewNodeCustomColor(hex);
+}
+function ccpHexInput() {
+  let v = document.getElementById('ccp-hex').value.trim();
+  if (v && v[0]!=='#') v = '#'+v;
+  if (!/^#[0-9a-fA-F]{6}$/.test(v)) return;
+  ccpSetFromHex(v, true);
+}
+function ccpRgbInput() {
+  const r = document.getElementById('ccp-r').value;
+  const g = document.getElementById('ccp-g').value;
+  const b = document.getElementById('ccp-b').value;
+  ccpSetFromHex(rgbToHex(+r||0, +g||0, +b||0), true);
+}
+
+// "Guardar en mi paleta" button — saves the currently active custom color into a slot
+function saveCurrentCustomColor() {
+  if (activeNodeColor!=='custom' || !activeCustomColor) return;
+  addCustomColorSlot(activeCustomColor.stroke);
+  renderNodeColorRow();
+  if (nodes.find(x=>x.id===selNode)) { autoSave(); snapshot(); }
+  setStatus('Color guardado en tu paleta');
 }
 
 // ── DELETE ──
@@ -1942,6 +2153,7 @@ document.addEventListener('mouseup', e=>{
         y = (e.clientY - r.top  + wrap.scrollTop)  / zoom;
       }
       const n={id,shape:g.shape,color:g.shape.startsWith('anno-')?'slate':activeNodeColor,x:Math.max(0,x-d.w/2),y:Math.max(0,y-d.h/2),w:d.w,h:d.h,title:g.shape==='anno-text'?'Texto de anotación':g.shape==='anno-rect'||g.shape==='anno-ellipse'?'':shapeName(g.shape),sub:'',info:'',consideraciones:'',normativa:[],durVal:0,durUnit:'min',fontFamily:'',fontSize:0};
+      if (n.color==='custom' && activeCustomColor) n.customColor = activeCustomColor;
       nodes.push(n);
       renderNode(n);
       selectNode(n.id);
@@ -2903,7 +3115,7 @@ function duplicateSelected() {
 }
 
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();cancelConn(); multiSel.clear(); nodes.forEach(n=>renderNode(n)); updateMultiSelUI();}
+  if(e.key==='Escape'){closeModal();cancelConn(); closeCustomColorPopover(); multiSel.clear(); nodes.forEach(n=>renderNode(n)); updateMultiSelUI();}
   const inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
   if((e.key==='Delete'||e.key==='Backspace')&&!inInput){
     if(multiSel.size>0) deleteSelected();
@@ -3589,6 +3801,7 @@ const nodes=${safeJSON(exportNodes)};
 const conns=${safeJSON(conns)};
 const ICONS=${safeJSON(ICONS)};
 const RESP_LIST=${safeJSON(getAllResponsables())};
+function nodeColor(n){return (n.color==='custom'&&n.customColor)?n.customColor:(PAL[n.color]||PAL.blue);}
 ${arrowJS}
 ${durJS}
 function bS(s,w,h,c){const f=c.fill,st=c.stroke,l=c.light||c.fill;switch(s){case 'rect':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" ry="4" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'diamond':return '<polygon points="'+w/2+',2 '+(w-2)+','+h/2+' '+w/2+','+(h-2)+' 2,'+h/2+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'circle':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="'+(h/2-1)+'" ry="'+(h/2-1)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'cylinder':{const rx=w/2-2,ry=Math.min(10,h*0.15);return '<rect x="2" y="'+ry+'" width="'+(w-4)+'" height="'+(h-ry*2)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/><ellipse cx="'+w/2+'" cy="'+ry+'" rx="'+rx+'" ry="'+ry+'" fill="'+l+'" stroke="'+st+'" stroke-width="1.5"/><ellipse cx="'+w/2+'" cy="'+(h-ry)+'" rx="'+rx+'" ry="'+ry+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'parallelogram':{const sk=20;return '<polygon points="'+sk+',1 '+(w-1)+',1 '+(w-sk)+','+(h-1)+' 1,'+(h-1)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'hexagon':{const q=w*.22;return '<polygon points="'+q+',2 '+(w-q)+',2 '+(w-2)+','+h/2+' '+(w-q)+','+(h-2)+' '+q+','+(h-2)+' 2,'+h/2+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'anno-text':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1" stroke-dasharray="4 3"/>';case 'anno-rect':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="6" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1.5" stroke-dasharray="6 3"/>';case 'anno-ellipse':return '<ellipse cx="'+w/2+'" cy="'+h/2+'" rx="'+(w/2-1)+'" ry="'+(h/2-1)+'" fill="'+f+'" fill-opacity="0.15" stroke="'+st+'" stroke-width="1.5" stroke-dasharray="6 3"/>';default:return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}}
@@ -3731,7 +3944,7 @@ function hideTip(){tipTimer=setTimeout(()=>tip.classList.remove('show'),120);}
 window.addEventListener('DOMContentLoaded',()=>{
   const cv=document.getElementById('cv'),svg=document.getElementById('sl');
   nodes.forEach(n=>{
-    const c=PAL[n.color]||PAL.blue;
+    const c=nodeColor(n);
     const el=document.createElement('div');
     el.id=n.id;
     el.className='fn';

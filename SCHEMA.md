@@ -65,6 +65,7 @@ a mano o con una IA sin necesidad de leer el resto del programa.
 | `durUnit` | string | `"min"`, `"h"` o `"d"` (minutos/horas/días) |
 | `fontFamily` | string | CSS font-family; `""` = usa la fuente por defecto (`'DM Sans', sans-serif`) |
 | `fontSize` | number | `0` = tamaño automático |
+| `customColor` | object | opcional, solo cuando `color:"custom"` — ver **Color personalizado** abajo |
 
 ### Shapes válidos
 
@@ -73,8 +74,30 @@ a mano o con una IA sin necesidad de leer el resto del programa.
 
 ### Colores válidos
 
-`blue`, `violet`, `green`, `amber`, `red`, `pink`, `gray`, `slate`, `dark`
-(paletas fijas definidas en `PAL`, no acepta colores hex arbitrarios en este campo).
+`blue`, `cyan`, `teal`, `green`, `emerald`, `yellow`, `amber`, `orange`, `red`, `rose`,
+`pink`, `purple`, `violet`, `indigo`, `gray`, `slate`, `dark`
+(paletas fijas definidas en `PAL`), o `custom` para un color arbitrario (ver abajo).
+
+### Color personalizado
+
+Cuando `color` es `"custom"`, el nodo debe incluir además un objeto `customColor` con
+los 4 tonos derivados (el editor los genera solos a partir de un único hex elegido por
+el usuario, aclarándolo hacia blanco para el relleno):
+
+```json
+"color": "custom",
+"customColor": { "fill": "#d9e8f5", "stroke": "#2f6fb0", "light": "#eef5fb", "text": "#111111" }
+```
+
+| Campo | Notas |
+|---|---|
+| `fill` | color de relleno de la figura (versión clara del color elegido) |
+| `stroke` | el color elegido por el usuario, tal cual — define el borde |
+| `light` | versión aún más clara, usada en el resalte superior de la figura "base de datos" |
+| `text` | color del texto dentro de la figura (`#111111` en la práctica siempre, ya que `fill` siempre queda lo bastante claro) |
+
+Si editas esto a mano, basta con fijar `stroke` al hex deseado y aclarar los otros dos
+hacia blanco (mezclando ~72% para `fill`, ~86% para `light`).
 
 ## Conexión (flecha entre nodos)
 
