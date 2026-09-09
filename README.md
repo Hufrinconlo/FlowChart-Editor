@@ -35,3 +35,6 @@ Abre `EDITOR.html` directamente en el navegador. No requiere instalación ni ser
 | `Shift+clic` | Añadir figura a la selección múltiple |
 
 **2 do list:**
+
+- Auto scale the UI from screen size
+- fix the horizontal lines shown on windows

@@ -3127,7 +3127,8 @@ document.addEventListener('keydown',e=>{
   if(mod && e.key.toLowerCase()==='z' && !e.shiftKey && !inInput){ e.preventDefault(); undo(); }
   if(mod && (e.key.toLowerCase()==='y' || (e.key.toLowerCase()==='z' && e.shiftKey)) && !inInput){ e.preventDefault(); redo(); }
   if(mod && e.key.toLowerCase()==='a' && !inInput){ e.preventDefault(); selectAll(); }
-  if(mod && e.key.toLowerCase()==='c' && !inInput){ e.preventDefault(); copySelected(); }
+  const hasTextSelection = window.getSelection && window.getSelection().toString().length > 0;
+  if(mod && e.key.toLowerCase()==='c' && !inInput && !hasTextSelection){ e.preventDefault(); copySelected(); }
   if(mod && e.key.toLowerCase()==='v' && !inInput){ e.preventDefault(); pasteClipboard(); }
   if(mod && e.key.toLowerCase()==='d' && !inInput){ e.preventDefault(); duplicateSelected(); }
   if(mod && (e.key==='+' || e.key==='=' || e.key===']') && !inInput){ e.preventDefault(); applyZoom(zoom*1.2, document.getElementById('canvas-wrap').clientWidth/2, document.getElementById('canvas-wrap').clientHeight/2); }
@@ -3263,12 +3264,15 @@ function restoreState(data) {
 // ── GUARDAR PROYECTO (JSON) ──
 function saveProject() {
   if (!nodes.length) { alert('No hay nada para guardar.'); return; }
-  const data = JSON.stringify({ nodes, conns, nid, cid, v: 1, ts: Date.now() }, null, 2);
+  const data = JSON.stringify({ nodes, conns, nid, cid, v: 1, ts: Date.now(), projectId: currentProjectId, projectName: currentProjectName }, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   const fecha = new Date().toISOString().slice(0,10);
-  a.download = `flujograma-${fecha}.json`;
+  const safeName = (currentProjectName && currentProjectName !== 'Sin título')
+    ? currentProjectName.replace(/[^a-zA-Z0-9À-ɏ _-]/g, '').trim()
+    : 'flujograma';
+  a.download = `${safeName || 'flujograma'}-${fecha}.json`;
   a.click();
   setSaveStatus('Proyecto exportado', '#059669');
 }
